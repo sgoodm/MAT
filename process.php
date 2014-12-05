@@ -62,13 +62,22 @@ switch ($_POST['type']) {
 
 	// send variables to Rscript to create geojson with weighted data
 	case 'buildPolyData':
+		$continent = $_POST["continent"];
 		$country = $_POST["country"];
-		$min = $_POST["start_year"];
-		$max = $_POST["end_year"];
+		$adm = $_POST["adm"];
+		$name = $_POST["name"];
+		$rasters = $_POST["rasters"];
+		$weights = $_POST["weights"]; 
+		$files = $_POST["files"];
+		$count = count($rasters);
 
-		$vars = $min ." ". $max;
+		$vars = strtolower($continent) ." ". strtolower($country) ." ". $adm ." ". $name ." ". $count;
 
-		if ( file_exists("/var/www/html/aiddata/MAT/rcalc/output/output_".$min."_".$max.".geojson") ){
+		for ($i=0; $i<$count; $i++){
+			$vars .= " " . $rasters[$i] ." ". $weights[$i] ." ". $files[$i];
+		}
+
+		if ( file_exists("/var/www/html/aiddata/MAT/data/".$name.".geojson") ){
 			echo "exists";
 
 		} else {

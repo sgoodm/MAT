@@ -1,53 +1,53 @@
-
 library("raster")
 library("rgdal")
 library("leafletR")
 
 readIn <- commandArgs(trailingOnly = TRUE)
 
-in_startYear <- as.numeric(readIn[1])
-in_endYear <- as.numeric(readIn[2])
+in_continent <- readIn[1]
+in_country <- readIn[2]
+in_adm <- readIn[3]
+in_name <- readIn[4]
+in_count <- as.numeric(readIn[5])
 
-setwd("/var/www/html/aiddata/MAT/rcalc")
-geojson <- readOGR("gadm/Leaflet.geojson", "OGRGeoJSON")
+in_rasters <- array()
+in_weights <- array()
+in_files <- array()
 
-base_file <- paste("raster1/asia__nepal__3_district__2011__agriculture__agricultural_aid__",in_startYear,".csv",sep="")
-base_csv <- read.csv(base_file)
-base_col <- paste("agriculture_",in_startYear,sep="")
-r1sum <- base_csv[,base_col]
-
-count <- in_endYear-in_startYear
-for (i in 1:count){
-	year <- in_startYear + i
-	new_file <- paste("raster1/asia__nepal__3_district__2011__agriculture__agricultural_aid__",year,".csv",sep="")
-	new_csv <- read.csv(new_file)
-	new_col <- paste("agriculture_",year,sep="")
-	r1sum <- r1sum + new_csv[,new_col]
+for (i in 1:in_count){
+	in_rasters[i] <- readIn[5+3*(i-1)+1]
+	in_weights[i] <- as.numeric(readIn[5+3*(i-1)+2])
+	in_files[i] <- readIn[5+3*(i-1)+3]
 }
 
-r2file <- "raster2/asia__nepal__3_district__2011__vegetation__ndvi__2001.csv"
-r2csv <- read.csv(r2file)
+base <- paste("/var/www/html/aiddata/DET/resources",in_continent,in_country,sep="/")
+setwd(base)
+
+geojson <- readOGR(paste("shapefiles",in_adm,"Leaflet.geojson",sep="/"), "OGRGeoJSON")
 
 
-geojson@data["sum"] <- r1sum
-r1sump <- r1sum / sum(r1sum)
-geojson@data["sump"] <- r1sump
+for (i in 1:in_count){
+	csv <-  read.csv(paste("cache",in_files[i], sep="/"))
+	weight <- in_weights[i] / sum(in_weights)
+	extract <- csv[,length(csv)]
+	calc <- ( extract / max(extract) ) * weight  
 
-ndvi <- r2csv$gimms_ndvi_qd_20010700
-ndvi[ndvi < 0] <- 0.123
-geojson@data["ndvi"] <- ndvi
-ndvip <- ndvi / sum(ndvi)
-geojson@data["ndvip"] <- ndvip
+	if (i==1){
+		result <- calc
+	} else {
+		result <- result + calc
+	}
+	# geojson@data[rasters[i]] <- extract
+	# geojson@data[rasters[i]] <- calc
+}
 
-ratio <- r1sump - ndvip
-geojson@data["ratio"] <- ratio
+geojson@data["result"] <- result
 
-sd <- (ratio-mean(ratio))/sd(ratio)
-geojson@data["sd"] <- sd
+# write(result, file="/var/www/html/aiddata/MAT/info.txt")
 
 
-setwd("/var/www/html/aiddata/MAT/rcalc/output")
 
-filename <- paste("output",in_startYear,in_endYear,sep="_")
+setwd("/var/www/html/aiddata/MAT/data")
 
-toGeoJSON(data=geojson, name=filename)
+
+toGeoJSON(data=geojson, name=in_name)

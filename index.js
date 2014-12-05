@@ -13,10 +13,14 @@ $(document).ready(function(){
 		start_year:2005,
 		end_year:2010,
 		rasters:[],
+		weights_obj:{},
 		weights:[],
+		files_obj:{},
 		files:[],
 		id:""
 	}
+
+	var options_log = {}
 
 	// --------------------------------------------------
 	// build options
@@ -75,9 +79,9 @@ $(document).ready(function(){
 
 		for (var i=0; i<vals.length;i++){
 			s.rasters.push(vals[i])
-			s.weights.push(1)
-			s.files.push($('#'+vals[i]).attr("data-file"))
-			newHTML = "<tr><td><input type='checkbox'></input></td><td><span>"+vals[i]+"</span></td><td><input type='number' value=1></input></td></tr>"
+			s.weights_obj[vals[i]] = 1
+			s.files_obj[vals[i]] = $('#'+vals[i]).attr("data-file")
+			newHTML = "<tr><td><input type='checkbox'></input></td><td><span>"+vals[i]+"</span></td><td><input class='weight'type='number' value=1></input></td></tr>"
 			$('#raster_selected_list tbody').append(newHTML)
 			$('#'+vals[i]).remove()
 		}
@@ -90,22 +94,35 @@ $(document).ready(function(){
 				var item = $(this).children(':nth-child(2)').text()
 				var index = s.rasters.indexOf(item)
 				s.rasters.splice(index,1)
-				s.weights.splice(index,1)
-				s.files.splice(index,1)
+				delete s.weights_obj[item]
+				delete s.files_obj[item]
 				$(this).remove()
 				addOptionToGroup(item)
 			}
 		})
 	})
 
+
 	$('#submit').click(function(){
 		$('#build_options').slideUp("slow", function(){
 			$('#build_toggle').slideDown()
 			setTimeout(function(){ 
 
+				s.rasters.sort()
+				s.weights = []
+				s.files = []
+
+				$('.weight').each(function(){
+					var weight = $(this).val()
+					var option = $(this).parent().prev().children(':nth-child(1)').text()
+					s.weights_obj[option] = weight
+				})
+
 				// generate unique id
 				s.id = s.country +"_"+ s.adm
 				for (var i=0; i<s.rasters.length; i++){
+					s.weights[i] = s.weights_obj[s.rasters[i]]
+					s.files[i] = s.files_obj[s.rasters[i]]
 					s.id += "_" + s.rasters[i] +"_"+ s.weights[i]
 				}
 
@@ -131,14 +148,16 @@ $(document).ready(function(){
 			$('#raster_selected_list tbody').empty()
 			s.rasters = []
 			s.weights = []
-			
+			options_log = {}
+
 			// build
 			process({ type: "scan", path: "/"+s.continent.toLowerCase().toLowerCase()+"/"+s.country.toLowerCase()+"/cache" }, function(options) {
 					var op_count = 0
 				    for (var op in options){
 				    	if (options[op].indexOf(s.adm) != -1 || options[op].indexOf(s.adm_alt) != -1){
-				    			option = filterOptionName(options[op], "__", 4, 4)
-				    			addOptionToGroup(option, options[op])
+				    			var option = filterOptionName(options[op], "__", 4, 4)
+				    			options_log[option] = options[op]
+				    			addOptionToGroup(option)
 				    			op_count ++
 				    	}
 				    }
@@ -170,14 +189,14 @@ $(document).ready(function(){
 		return option.substr(index+offset, end)
 	}
 
-	function addOptionToGroup(option, file){
+	function addOptionToGroup(option){
     	var type = option.substr(0,option.indexOf("__"))
 
     	if ( !$("#optgroup_"+type).length ){
     		$("#raster_available_list").append('<optgroup id="optgroup_'+type+'" label="'+type+'"></optgroup>')
     	}
 	        
-        $("#optgroup_"+type).append('<option id="'+option+'" value="' + option + '" data-file="'+file+'">' + option + '</option>')   
+        $("#optgroup_"+type).append('<option id="'+option+'" value="' + option + '" data-file="'+options_log[option]+'">' + option + '</option>')   
 	}
 
 
@@ -186,7 +205,7 @@ $(document).ready(function(){
 
 	$("#ndvi").on("click", function(){
 		onExtract = true
-		prepExtract("nepal") // COUNTRY REF
+		prepExtract()
 	})
 
 
@@ -234,7 +253,7 @@ $(document).ready(function(){
 	        s.start_year = $("#slider").dragslider("values")[0]
 	    	s.end_year = $("#slider").dragslider("values")[1]
 	        if (onPoint){ addPointData() }
-	        if (onExtract){ prepExtract("nepal")} // COUNTRY REF
+	        if (onExtract){ prepExtract()}
     	}
     });
 
@@ -354,16 +373,16 @@ $(document).ready(function(){
 
 	}
 
-	function prepExtract(country){
+	function prepExtract(){
 
 		$.ajax ({
 	        url: "process.php",
-	        data: {type: "buildPolyData", country: s.country, start_year: s.start_year, end_year: s.end_year, name:s.id},
+	        data: {type: "buildPolyData", continent: s.continent, country: s.country, adm: s.adm, name:s.id, rasters: s.rasters, weights: s.weights, files: s.files},
 	        dataType: "text",
 	        type: "post",
 	        async: false,
 	        success: function(result) {
-	        	addGeoExtract("rcalc/output/output_"+s.start_year+"_"+s.end_year+".geojson")
+	        	addGeoExtract("data/"+s.id+".geojson")
 	        }
 	    })
 
@@ -389,19 +408,19 @@ $(document).ready(function(){
 		
 		function getColor(d) { // ### HERE ###
 
-		    return d <= -1.5 ? '#de2d26' :
-		           d <= -1.0 ? '#fc9272' :
-		           d <= -0.5 ? '#fee0d2' :
+		    return d <= 0.15 ? '#de2d26' :
+		           d <= 0.30 ? '#fc9272' :
+		           d <= 0.45 ? '#fee0d2' :
 
-		           d <= 0.5 ? '#fff7bc' :
-		           d <= 1.0 ? '#e5f5e0' :
-   		           d <= 1.5 ? '#a1d99b' :
+		           d <= 0.60 ? '#fff7bc' :
+		           d <= 0.85 ? '#e5f5e0' :
+   		           d <= 1.00 ? '#a1d99b' :
    		           			  '#31a354';
 		}
 
 		function style(feature) {
 		    return {
-		        fillColor: getColor(feature.properties.sd), // ### HERE ###
+		        fillColor: getColor(feature.properties.result), // ### HERE ###
 		        weight: 1,
 		        opacity: 1,
 		        color: 'black',
@@ -464,12 +483,12 @@ $(document).ready(function(){
 
 		// method that we will use to update the control based on feature properties passed
 		info.update = function (props) {
-		    this._div.innerHTML = '<h4>Potential Agricultural Productivity (2001)</h4>' +  (props ?
+		    this._div.innerHTML = '<h4>Weight Result</h4>' +  (props ?
 		        '<b>' + props.NAME_2 + '</b><br />' 
 		        + 'sd: ' + roundx(props.sd) + '<br>'
 		        + '%$ - %ndvi: ' + roundx(props.ratio) + '<br>'
 		        + 'Aid:  ' + roundx(props.sum) + ' $ USD<br>'
-		        + 'NDVI: ' + roundx(props.ndvi) 
+		        + 'Result: ' + roundx(props.result) 
 		        : 'Hover over an area');
 		};
 
@@ -486,24 +505,15 @@ $(document).ready(function(){
 
 		    var div = L.DomUtil.create('div', 'info legend'),
 
-		        grades = [-1.5, -1.0, -0.5, 0.5, 1.0, 1.5, 2], // ### HERE ###
+		        grades = [0.15, 0.30, 0.45, 0.60, 0.85, 1], // ### HERE ###
 		        labels = [];
 
 		    // loop through our density intervals and generate a label with a colored square for each interval
 		    for (var i = 0; i < grades.length; i++) {
 		        div.innerHTML += '<i style="background:' + getColor(grades[i]) + '"></i> '
-		        // if (!grades[i-1]){
-		        // 	div.innerHTML += "< " + grades[i]  + '<br>'
-		        // } else if (!grades[i+1]){
-		        // 	div.innerHTML += "> " + grades[i]  + '<br>'
-		        // } else {
-		        // 	div.innerHTML += grades[i] + '&ndash;' + grades[i + 1] + '<br>'
-		        // }
-		        if (!grades[i+1]){
-		        	div.innerHTML += grades[i-1]  + '+<br>'
-		        } else {
-		        	div.innerHTML += "<= " + grades[i]  + '<br>'
-		        }
+
+		        div.innerHTML += "<= " + grades[i]  + '<br>'
+		        
 		    }
 		    return div;
 		};
