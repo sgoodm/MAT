@@ -302,18 +302,24 @@ $(document).ready(function(){
 	// bounds objects
 	var allCountryBounds = { global:{_northEast:{lat:90, lng:180}, _southWest:{lat:-90, lng:-180}} }
 
-	// addCountry vars
-	var countryLayer 
-
-	// addPointData vars
-	var markers, geojsonPoints
-
-	// addGeoExtract vars
-	var geojson, info, legend, rasterLayer
+	// addCountry vars: countryLayer
+	// addPointData vars: markers, geojsonPoints
+	// addGeoExtract vars: geojson, info, legend
+	var countryLayer, markers, geojsonPoints, geojson, info, legend 
 
 	function addCountry(){
 		var file = "/aiddata/DET/resources/"+p.continent.toLowerCase()+"/"+p.country.toLowerCase()+"/shapefiles/Leaflet.geojson"
-		var geojsonFeature = readJSON(file)
+
+		var geojsonFeature, error
+		readJSON(file, function(result, e){
+			geojsonFeature = result
+			error = e
+		})
+
+		if (error){
+			console.log(error.error)
+			return 1
+		}
 
 		cleanMap("poly")
 
@@ -327,7 +333,7 @@ $(document).ready(function(){
 		
 		function style(feature) {
 		    return {
-		        fillColor: 'red', // ### HERE ###
+		        fillColor: 'red',
 		        weight: 1,
 		        opacity: 1,
 		        color: 'black',
@@ -430,8 +436,7 @@ $(document).ready(function(){
 
 		var geojsonFeature = readJSON(file)
 		
-		function getColor(d) { // ### HERE ###
-
+		function getColor(d) {
 		    return d <= 0.15 ? '#de2d26' :
 		           d <= 0.30 ? '#fc9272' :
 		           d <= 0.45 ? '#fee0d2' :
@@ -443,7 +448,7 @@ $(document).ready(function(){
 
 		function style(feature) {
 		    return {
-		        fillColor: getColor(feature.properties.result), // ### HERE ###
+		        fillColor: getColor(feature.properties.result),
 		        weight: 1,
 		        opacity: 1,
 		        color: 'black',
@@ -598,14 +603,20 @@ $(document).ready(function(){
 	}
 
 	// read in a json file and return object
-	function readJSON(file) {
-	    var request = $.ajax({
+	function readJSON(file, callback) {
+	    $.ajax({
 	    	type: "GET",
 			dataType: "json",
 			url: file,
 			async: false,
+	    	success: function(request){
+	    		callback(request, 0)
+	    	},    
+	    	error: function (request, status, error) {
+        		callback(null, {request, status, error});
+    		}
 	    })
-	    return request.responseJSON
+	    
 	};
 	
 })
