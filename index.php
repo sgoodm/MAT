@@ -18,7 +18,6 @@
 
     <link rel="stylesheet" href="index.css?<?php echo filectime('index.css') ?>" />    
 
-
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
@@ -29,15 +28,19 @@
 
     <script src="/aiddata/libs/MarkerCluster/leaflet.markercluster-src.js"></script>
 
-    <script src="/aiddata/libs/leaflet.ajax.min.js"></script>
+    <script src="/aiddata/libs/leaflet.spin.js"></script>
 
-    <script src="/aiddata/libs/leaflet-dvf.min.js"></script>
+    <script src="/aiddata/libs/spin.min.js"></script>    
 
-    <script src="/aiddata/libs/Leaflet.geoCSV-master/leaflet.geocsv.js"></script>
+    <!-- <script src="/aiddata/libs/leaflet.ajax.min.js"></script> -->
+
+    <!-- <script src="/aiddata/libs/leaflet-dvf.min.js"></script> -->
+
+    <!-- <script src="/aiddata/libs/Leaflet.geoCSV-master/leaflet.geocsv.js"></script> -->
     
     <script src="/aiddata/libs/dragslider.js"></script>
 
-    <script src="/aiddata/libs/SliderControl.js"></script>
+    <!-- <script src="/aiddata/libs/SliderControl.js"></script> -->
 
     <script src="/aiddata/libs/underscoremin.js"></script>
 
@@ -77,7 +80,6 @@
             </div>     
         </div>
 
-
         <div id="raster_options">
             <div id="raster_available">
                 <div>Available Rasters</div>
@@ -105,7 +107,6 @@
         </div>
     </div>
 
-
     <div id="data_options">   
         <div id="data_type">
             <ul>
@@ -129,19 +130,7 @@
         </div>
     </div>
 
-
-    <div id="map">
-        
-    </div> 
-
-
-    <div id="loading" style="display:none">
-        <img src="/aiddata/imgs/loading.gif">
-    </div> 
-
-    <!-- TEMP -->
-    <div id="ndvi" class="menu_item" style="display:none"></div>
-    <!--  -->
+    <div id="map"></div> 
 
     <div id="navbar_spacer"></div>
     <?php include("/var/www/html/aiddata/home/nav.php"); ?>  

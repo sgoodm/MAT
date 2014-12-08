@@ -6,8 +6,6 @@ body{
     color: white;
 }
 
-
-
 #header{
     padding: 10px 50px;
     font-size: 36px;
@@ -173,13 +171,35 @@ body{
             padding: 0;
         }
 
-        #data_type ul li{
-            display: inline-block;
-            text-decoration: none;
-            padding:5px;
-            width: 25%;
-            text-align: center;
-        }
+            .menu_item {
+                display: inline-block;
+                text-decoration: none;
+                padding:5px;
+                width: 25%;
+                text-align: center;
+                border: solid 1px black;
+                border-collapse: collapse;
+            }
+
+            .menu_item:hover{
+                cursor:pointer;
+                background-color: rgba(120,150,170,0.5);
+            }
+
+            .active_menu{
+                background-color: rgba(120,150,170,1);
+            }
+
+            .menu_item>div{
+                padding-top: 15px;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none; 
+                -khtml-user-select: none; 
+                -moz-user-select: none; 
+                -ms-user-select: none;
+                -o-user-select: none; 
+                user-select: none; 
+            }
 
     #slider_container{
         /*width: 75%;*/
@@ -207,7 +227,6 @@ body{
     display:inline-block;
 }
 
-
     .legend {
         width: 100px;
         line-height: 20px;
@@ -220,7 +239,6 @@ body{
         margin-right: 8px;
         opacity: 0.7;
     }
-
 
     .info {
         padding: 6px 8px;
@@ -235,51 +253,9 @@ body{
         color: #777;
     }
 
-
     .geocode-cluster{
         background: #9FE5F8;background:rgba(159, 229, 248, 0.5);border:1px solid black;border:1px solid rgba(0, 0, 0, 0.5);border-radius:50%;
     }
     .geocode-cluster div{
         text-align:center;line-height:0%;position:relative;top:50%;
     }
-
-
-
-
-
-
-    .menu_item{
-        border: solid 1px black;
-        border-collapse: collapse;
-    }
-
-    .temp{
-        font-style: italic;
-    }
-
-    #ndvi{
-        font-weight: bold;
-    }
-
-    .menu_item:hover{
-        cursor:pointer;
-        background-color: rgba(120,150,170,0.5);
-    }
-
-    .active_menu{
-        background-color: rgba(120,150,170,1);
-    }
-
-    .menu_item>div{
-        padding-top: 15px;
-        -webkit-touch-callout: none;
-        -webkit-user-select: none; 
-        -khtml-user-select: none; 
-        -moz-user-select: none; 
-        -ms-user-select: none;
-        -o-user-select: none; 
-        user-select: none; 
-    }
-
-
-

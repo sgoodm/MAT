@@ -4,14 +4,12 @@
 
 $(document).ready(function(){
 
-	var s = {
+	//submission data and pending data objects
+	var s,p = {
 		country:"",
 		continent:"",
 		adm:"",
 		adm_alt:"",
-		type:"",
-		start_year:2005,
-		end_year:2010,
 		rasters:[],
 		weights_obj:{},
 		weights:[],
@@ -20,10 +18,20 @@ $(document).ready(function(){
 		id:""
 	}
 
+	//dynamic point info data
+	var d = {
+		type:"",
+		start_year:2005,
+		end_year:2010
+	}
+
+	// used to store info about rasters available for selected country / adm
 	var options_log = {}
+
 
 	// --------------------------------------------------
 	// build options
+
 
 	$('#country').val('-----')
 	$('#adm').val('-----')
@@ -35,27 +43,30 @@ $(document).ready(function(){
 			$blank.remove() 
 		}
 
-		s.country = $(this).val()
+		p.country = $(this).val()
 
-		switch (s.country){
+		// continent needed to access data using current DET file structure
+		switch (p.country){
 			case "Nepal":
-				s.continent = "Asia"
+				p.continent = "Asia"
 				break
 			case "Uganda":
 			case "Malawi":
-				s.continent = "Africa"
+				p.continent = "Africa"
 				break
 		}
 
+		// add country polygon to map
 		addCountry()
 
-		if (s.type != ""){
+		// build point layer if a point layer was being viewed for previous country
+		if (d.type != ""){
 			addPointData()
 		}
 
+		// create list of rasters available for the selected country / adm
 		buildRasterList()
 
-		console.log(s)
 
 	})
 
@@ -66,9 +77,13 @@ $(document).ready(function(){
 			$blank.remove() 
 		}
 
-		s.adm = $(this).val()
-		s.adm_alt = "__"+s.adm.substr(3) +"_"
+		p.adm = $(this).val()
 
+		// alternate method for identifying the adm of data in the DET tool
+		// needed to access old DET data that has not been recreated using new adm naming system
+		p.adm_alt = "__"+p.adm.substr(3) +"_"
+
+		// create list of rasters available for the selected country / adm
 		buildRasterList()
 	})
 
@@ -78,59 +93,62 @@ $(document).ready(function(){
 		if (vals == null){ return }
 
 		for (var i=0; i<vals.length;i++){
-			s.rasters.push(vals[i])
-			s.weights_obj[vals[i]] = 1
-			s.files_obj[vals[i]] = $('#'+vals[i]).attr("data-file")
+			p.rasters.push(vals[i])
+			p.weights_obj[vals[i]] = 1
+			p.files_obj[vals[i]] = $('#'+vals[i]).attr("data-file")
 			newHTML = "<tr><td><input type='checkbox'></input></td><td><span>"+vals[i]+"</span></td><td><input class='weight'type='number' value=1></input></td></tr>"
 			$('#raster_selected_list tbody').append(newHTML)
 			$('#'+vals[i]).remove()
 		}
-		console.log(s)
 	})
 
 	$('#raster_remove').click(function(){
 		$('tr').each(function(){
 			if ( $(this).children(':nth-child(1)').children(':nth-child(1)').prop("checked") ){
 				var item = $(this).children(':nth-child(2)').text()
-				var index = s.rasters.indexOf(item)
-				s.rasters.splice(index,1)
-				delete s.weights_obj[item]
-				delete s.files_obj[item]
+				var index = p.rasters.indexOf(item)
+				p.rasters.splice(index,1)
+				delete p.weights_obj[item]
+				delete p.files_obj[item]
 				$(this).remove()
 				addOptionToGroup(item)
 			}
 		})
 	})
 
-
 	$('#submit').click(function(){
 		$('#build_options').slideUp("slow", function(){
 			$('#build_toggle').slideDown()
 			setTimeout(function(){ 
 
-				s.rasters.sort()
-				s.weights = []
-				s.files = []
+				// sort rasters list to preserve naming system
+				// prevents identical calls creating different files due to naming system
+				p.rasters.sort()
+				p.weights = []
+				p.files = []
 
+				// get raster name for each weight item and update weight object
 				$('.weight').each(function(){
 					var weight = $(this).val()
 					var option = $(this).parent().prev().children(':nth-child(1)').text()
-					s.weights_obj[option] = weight
+					p.weights_obj[option] = weight
 				})
 
 				// generate unique id
-				s.id = s.country +"_"+ s.adm
-				for (var i=0; i<s.rasters.length; i++){
-					s.weights[i] = s.weights_obj[s.rasters[i]]
-					s.files[i] = s.files_obj[s.rasters[i]]
-					s.id += "_" + s.rasters[i] +"_"+ s.weights[i]
+				p.id = p.country +"_"+ p.adm
+				for (var i=0; i<p.rasters.length; i++){
+					p.weights[i] = p.weights_obj[p.rasters[i]]
+					p.files[i] = p.files_obj[p.rasters[i]]
+					p.id += "_" + p.rasters[i] +"_"+ p.weights[i]
 				}
 
-				console.log(s)
-				// TEMP
-				$('#ndvi').click()
+				// copy pending data object to submission data object
+				s = p
+
+				// build weighted geojson
+				prepExtract()
 		 	
-		 	}, 1000)
+		 	}, 500)
  
 		})
 	})
@@ -141,20 +159,23 @@ $(document).ready(function(){
 
 
 	function buildRasterList(){
-		if (s.continent != "" && s.country != "" && s.adm != ""){
+		if (p.continent != "" && p.country != "" && p.adm != ""){
 
 			// init
 			$('#raster_available_list').empty()
 			$('#raster_selected_list tbody').empty()
-			s.rasters = []
-			s.weights = []
+			p.rasters = []
+			p.weights = []
+			p.files = []
+			p.weight_obj = {}
+			p.files_obj={}
 			options_log = {}
 
 			// build
-			process({ type: "scan", path: "/"+s.continent.toLowerCase().toLowerCase()+"/"+s.country.toLowerCase()+"/cache" }, function(options) {
+			process({ type: "scan", path: "/"+p.continent.toLowerCase().toLowerCase()+"/"+p.country.toLowerCase()+"/cache" }, function(options) {
 					var op_count = 0
 				    for (var op in options){
-				    	if (options[op].indexOf(s.adm) != -1 || options[op].indexOf(s.adm_alt) != -1){
+				    	if (options[op].indexOf(p.adm) != -1 || options[op].indexOf(p.adm_alt) != -1){
 				    			var option = filterOptionName(options[op], "__", 4, 4)
 				    			options_log[option] = options[op]
 				    			addOptionToGroup(option)
@@ -171,8 +192,9 @@ $(document).ready(function(){
 		}
 	}
 
-	//option = string, m = search char, n = nth occurence, p = offset from end of string
-	function filterOptionName(option, m, n, p = 0){
+	// option = string, m = search char, n = nth occurence, p = offset from end of string
+	function filterOptionName(option, m, n, p){
+		if (!p){p = 0}
 		var i = 0, index = null, offset = 0
 
 		while (i < n && index != -1){
@@ -189,6 +211,8 @@ $(document).ready(function(){
 		return option.substr(index+offset, end)
 	}
 
+	// add raster of format 'type__sub__year' to list of available rasters
+	// raster file location stored in options_log object
 	function addOptionToGroup(option){
     	var type = option.substr(0,option.indexOf("__"))
 
@@ -203,28 +227,8 @@ $(document).ready(function(){
 	// --------------------------------------------------
 	// point data options
 
-	$("#ndvi").on("click", function(){
-		onExtract = true
-		prepExtract()
-	})
 
-
-	$(".menu_item").click(function(){
-		if (s.country == ""){return}
-		
-		$(this).siblings().removeClass("active_menu")
-		$(this).addClass("active_menu")
-	})
-
-	$("#data_type ul li").on("click", function(){
-		if (s.country == ""){ return }
-
-		onPoint = true
-		s.type = $(this).attr("id")
-		addPointData()
-	
-	})
-
+	// init year slider object
 	$('#slider').dragslider({
 		animate: true,
 		range: true,
@@ -232,9 +236,10 @@ $(document).ready(function(){
 		min:2001,
 		max:2013,
 		step: 1,
-		values: [s.start_year, s.end_year]
+		values: [d.start_year, d.end_year]
 	}); 
  	
+ 	// init slider years ui
     var v = $("#slider").dragslider("values")
     $('#slider_value').text(v[0]+" - "+v[1]);
     var min = $('#slider').dragslider('option', 'min')
@@ -242,24 +247,46 @@ $(document).ready(function(){
     $('#slider_min').text(min);
     $('#slider_max').text(max);
 
+    // slider events
     var onPoint = false
-    var onExtract = false
     $('#slider').dragslider({
     	slide: function(event, ui) {
 	    	v = ui.values
 	        $('#slider_value').text(v[0]+" - "+v[1]);
 	   	},
     	change: function(event, ui) {
-	        s.start_year = $("#slider").dragslider("values")[0]
-	    	s.end_year = $("#slider").dragslider("values")[1]
+	        d.start_year = $("#slider").dragslider("values")[0]
+	    	d.end_year = $("#slider").dragslider("values")[1]
+
+	    	// prevents attempt to build points if no type has been selected
 	        if (onPoint){ addPointData() }
-	        if (onExtract){ prepExtract()}
     	}
     });
+
+	// manage menu display
+	$(".menu_item").click(function(){
+		if (p.country == ""){return}
+		
+		$(this).siblings().removeClass("active_menu")
+		$(this).addClass("active_menu")
+	})
+
+	// point type selection
+	$("#data_type ul li").on("click", function(){
+		if (p.country == ""){ return }
+
+		onPoint = true
+		d.type = $(this).attr("id")
+		addPointData()
+	
+	})
+
 
 	// --------------------------------------------------
 	// map
 
+
+	// init
 	L.mapbox.accessToken = 'pk.eyJ1Ijoic2dvb2RtIiwiYSI6InotZ3EzZFkifQ.s306QpxfiAngAwxzRi2gWg'
 
 	var map = L.mapbox.map('map', {})
@@ -272,23 +299,31 @@ $(document).ready(function(){
 
 	map.options.maxZoom = 11
 
-
+	// bounds objects
 	var allCountryBounds = { global:{_northEast:{lat:90, lng:180}, _southWest:{lat:-90, lng:-180}} }
 
-
+	// addCountry vars
 	var countryLayer 
 
+	// addPointData vars
+	var markers, geojsonPoints
+
+	// addGeoExtract vars
+	var geojson, info, legend, rasterLayer
+
 	function addCountry(){
-		var file = "/aiddata/DET/resources/"+s.continent.toLowerCase()+"/"+s.country.toLowerCase()+"/shapefiles/Leaflet.geojson"
+		var file = "/aiddata/DET/resources/"+p.continent.toLowerCase()+"/"+p.country.toLowerCase()+"/shapefiles/Leaflet.geojson"
 		var geojsonFeature = readJSON(file)
-		if (map.hasLayer(countryLayer)){
-			map.removeLayer(countryLayer)
-		}
-		countryLayer = L.geoJson(geojsonFeature, {style: style}).addTo(map);
+
+		cleanMap("poly")
+
+		countryLayer = L.geoJson(geojsonFeature, {style: style})
+		countryLayer.addTo(map)
+
 		var countryBounds = countryLayer.getBounds()
 		map.fitBounds( countryBounds )
 
-		allCountryBounds[s.country] = countryBounds
+		allCountryBounds[p.country] = countryBounds
 		
 		function style(feature) {
 		    return {
@@ -299,22 +334,16 @@ $(document).ready(function(){
 		        fillOpacity: 0.25
 		    };
 		}
-
 	}
 
-
-	var markers,
-		geojsonPoints
-	
 	function addPointData(){
 
-		if (map.hasLayer(markers)){
-			map.removeLayer(markers)
-		}
+		cleanMap("point")
 
+		map.spin(true)
 		$.ajax ({
 	        url: "process.php",
-	        data: {type: "addPointData", country:s.country, pointType: s.type, start_year:s.start_year, end_year:s.end_year},
+	        data: {type: "addPointData", country:p.country, pointType: d.type, start_year:d.start_year, end_year:d.end_year},
 	        dataType: "json",
 	        type: "post",
 	        async: false,
@@ -323,38 +352,43 @@ $(document).ready(function(){
 				geojsonPoints = geojsonContents
 
 				markers = new L.MarkerClusterGroup({
-					disableClusteringAtZoom: 10//8
+					disableClusteringAtZoom: 12
 				});
 
 				var geojsonLayer = L.geoJson(geojsonContents, {
 					onEachFeature: function (feature, layer) {
 						var a = feature.properties
 
-						var popup = "PLACEHOLDER"
-						// var popup = "<b>"+a.placename+"</b>";
-						// popup += "</br>Region: " + a.R_NAME
-						// popup += "</br>Zone: " + a.Z_NAME
-						// popup += "</br>District: " + a.D_NAME
-						// popup += "</br>Project Start: " + a.actual_start_date
-						// popup += "</br>Years: "
-						// var c = 0
-						// for (var y = start_year; y<=end_year; y++){
-						// 	if ( parseFloat(a["d_"+y]) > 0 ){
-						// 		if (c>0){ popup += ", "}
-						// 		popup += y
-						// 		c++							
-						// 	}
-						// }
-						// popup += "</br>$USD: "
-						// c = 0
-						// for (var y = start_year; y<=end_year; y++){
-						// 	if ( parseFloat(a["d_"+y]) > 0 ){
-						// 		if (c>0){ popup += ", "}
-						// 		popup += a["d_"+y]
-						// 		c++							
-						// 	}
-						// }
-						// popup += "</br>Donors: " + a.donors
+						var popup = ""
+						popup += "<b>Location Info</b>" 
+						popup += "<br>Geoname: " + a.geoname
+						popup += "<br>ADM1: " + a.ADM1_NAME
+						if(a.ADM2_NAME){ popup += "<br>ADM2: " + a.ADM2_NAME }
+						if(a.ADM3_NAME){ popup += "<br>ADM3: " + a.ADM3_NAME }
+
+						popup += "<br><br><b>Project Info</b>"
+						popup += "<br>Date of Agreement: " + a.date_of_agreement
+						popup += "<br>Donors: " + a.donor
+						popup += "<br>Project Sites: " + a.count
+
+						popup += "<br>Years: "
+						var c = 0
+						for (var y = d.start_year; y<=d.end_year; y++){
+							if ( parseFloat(a["d_"+y]) > 0 ){
+								if (c>0){ popup += ", "}
+								popup += y
+								c++							
+							}
+						}
+						popup += "<br>USD: "
+						c = 0
+						for (var y = d.start_year; y<=d.end_year; y++){
+							if ( parseInt(a["d_"+y]) > 0 ){
+								if (c>0){ popup += ", "}
+								popup += ( parseInt(a["d_"+y]) ).toLocaleString()
+								c++							
+							}
+						}
 
 						layer.bindPopup(popup);
 					},
@@ -367,6 +401,7 @@ $(document).ready(function(){
 
 				markers.addLayer(geojsonLayer);
 				map.addLayer(markers);
+				map.spin(false)
 
 	        }
 	    })
@@ -374,7 +409,7 @@ $(document).ready(function(){
 	}
 
 	function prepExtract(){
-
+		map.spin(true)
 		$.ajax ({
 	        url: "process.php",
 	        data: {type: "buildPolyData", continent: s.continent, country: s.country, adm: s.adm, name:s.id, rasters: s.rasters, weights: s.weights, files: s.files},
@@ -383,26 +418,15 @@ $(document).ready(function(){
 	        async: false,
 	        success: function(result) {
 	        	addGeoExtract("data/"+s.id+".geojson")
+       	       	map.spin(false)
 	        }
 	    })
-
 	}
 
 
-	var geojson,
-		info,
-		legend,
-		rasterLayer
-
 	function addGeoExtract(file){
 
-		if (map.hasLayer(geojson)){
-			map.removeLayer(geojson)
-			info.removeFrom(map)
-			legend.removeFrom(map)
-
-			map.removeLayer(countryLayer)
-		}
+		cleanMap("poly")
 
 		var geojsonFeature = readJSON(file)
 		
@@ -414,8 +438,7 @@ $(document).ready(function(){
 
 		           d <= 0.60 ? '#fff7bc' :
 		           d <= 0.85 ? '#e5f5e0' :
-   		           d <= 1.00 ? '#a1d99b' :
-   		           			  '#31a354';
+   		           			   '#a1d99b' ; 
 		}
 
 		function style(feature) {
@@ -483,13 +506,25 @@ $(document).ready(function(){
 
 		// method that we will use to update the control based on feature properties passed
 		info.update = function (props) {
-		    this._div.innerHTML = '<h4>Weight Result</h4>' +  (props ?
-		        '<b>' + props.NAME_2 + '</b><br />' 
-		        + 'sd: ' + roundx(props.sd) + '<br>'
-		        + '%$ - %ndvi: ' + roundx(props.ratio) + '<br>'
-		        + 'Aid:  ' + roundx(props.sum) + ' $ USD<br>'
-		        + 'Result: ' + roundx(props.result) 
-		        : 'Hover over an area');
+			var html =  '<h4>Weight Result</h4>'
+
+			if (props){
+				html += '<b>' + props["NAME_"+s.adm.substr(3)] + '</b><br />' 
+		        
+		        for (var i=0; i<s.rasters.length; i++){
+
+    			    html += s.rasters[i]+':  ' + roundx(props[s.rasters[i]]) + '<br>'
+
+		        }
+
+		        html += 'Result: ' + roundx(props.result) 
+			
+			} else {
+				html = 'Hover over an area'
+			}
+
+		    this._div.innerHTML = html
+		        
 		};
 
 		info.addTo(map);
@@ -498,7 +533,7 @@ $(document).ready(function(){
 			return Math.floor(x*1000)/(1000)
 		}
 
-		//manage legend
+		// manage legend
 		legend = L.control({position: 'bottomright'});
 
 		legend.onAdd = function (map) {
@@ -522,10 +557,33 @@ $(document).ready(function(){
 
 	}
 
+	function cleanMap(method){
+
+		if (method == "point" || method == "all"){
+			if (map.hasLayer(markers)){
+				map.removeLayer(markers)
+			}
+		}
+
+		if (method == "poly" || method == "all"){
+			if (map.hasLayer(countryLayer)){
+				map.removeLayer(countryLayer)
+			}
+
+			if (map.hasLayer(geojson)){
+				map.removeLayer(geojson)
+				info.removeFrom(map)
+				legend.removeFrom(map)				
+			}
+		}
+	}
+
+
 	// --------------------------------------------------
 	// general functions
 
-	//generic ajax call to process.php
+
+	// generic ajax call to process.php
 	function process(data, callback){
 		$.ajax ({
 	        url: "process.php",
@@ -539,7 +597,7 @@ $(document).ready(function(){
 	    })
 	}
 
-	//read in a json file and return object
+	// read in a json file and return object
 	function readJSON(file) {
 	    var request = $.ajax({
 	    	type: "GET",
@@ -549,9 +607,5 @@ $(document).ready(function(){
 	    })
 	    return request.responseJSON
 	};
-
-
-})
-
-
 	
+})

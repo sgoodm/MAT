@@ -30,15 +30,21 @@ for (i in 1:in_count){
 	csv <-  read.csv(paste("cache",in_files[i], sep="/"))
 	weight <- in_weights[i] / sum(in_weights)
 	extract <- csv[,length(csv)]
-	calc <- ( extract / max(extract) ) * weight  
+	
+	max <- max(extract)
+	if (max == 0){
+		max <- 1
+		calc <- extract
+	} else {
+		calc <- ( extract / max(extract) ) * weight  
+	}
 
 	if (i==1){
 		result <- calc
 	} else {
 		result <- result + calc
 	}
-	# geojson@data[rasters[i]] <- extract
-	# geojson@data[rasters[i]] <- calc
+	geojson@data[in_rasters[i]] <- extract
 }
 
 geojson@data["result"] <- result
