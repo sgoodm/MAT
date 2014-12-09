@@ -107,32 +107,32 @@ body{
             overflow-y: auto;
         }
 
-            tr{
+             #raster_selected_list tr{
                 margin-top: 10px;
                 margin-bottom: 10px;
             }
 
-                td{
+                 #raster_selected_list td{
                     float: left;
                     text-align: center;
                     overflow: hidden;
                 }
-                td:nth-child(1){
+                 #raster_selected_list td:nth-child(1){
                     width:5%;
                 }
-                    td:nth-child(1) *{
+                     #raster_selected_list td:nth-child(1) *{
                         width:100%;
                     }
-                td:nth-child(2){
+                 #raster_selected_list td:nth-child(2){
                     width:80%;
                 }
-                    td:nth-child(2) *{
+                     #raster_selected_list td:nth-child(2) *{
                         width:100%;
                     }
-                td:nth-child(3){
+                 #raster_selected_list td:nth-child(3){
                     width:15%;
                 }
-                    td:nth-child(3) *{
+                     #raster_selected_list td:nth-child(3) *{
                         width:100%;
                     }
 
@@ -259,3 +259,19 @@ body{
     .geocode-cluster div{
         text-align:center;line-height:0%;position:relative;top:50%;
     }
+
+    #map_table{
+        margin: 5px;
+    }
+
+        #map_table tr{
+            text-align: center;
+            padding: 5px;
+        }
+
+        #map_table td{
+            padding: 3px;
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+

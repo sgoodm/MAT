@@ -1,6 +1,5 @@
 <?php
 
-
 switch ($_POST['type']) {
 
 	//returns directory contents
@@ -65,7 +64,7 @@ switch ($_POST['type']) {
 		$continent = $_POST["continent"];
 		$country = $_POST["country"];
 		$adm = $_POST["adm"];
-		$name = $_POST["name"];
+		$name = $country ."_". $adm ."_". md5($_POST["name"]);
 		$rasters = $_POST["rasters"];
 		$weights = $_POST["weights"]; 
 		$files = $_POST["files"];
@@ -78,14 +77,13 @@ switch ($_POST['type']) {
 		}
 
 		if ( file_exists("/var/www/html/aiddata/MAT/data/".$name.".geojson") ){
-			echo "exists";
+			echo $name;
 
 		} else {
 			exec("/usr/bin/Rscript /var/www/html/aiddata/MAT/build.R $vars"); 
-			echo "created";
+			echo $name;
 		}
 		break;
 }
-
 
 ?>

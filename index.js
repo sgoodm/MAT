@@ -423,7 +423,7 @@ $(document).ready(function(){
 	        type: "post",
 	        async: false,
 	        success: function(result) {
-	        	addGeoExtract("data/"+s.id+".geojson")
+	        	addGeoExtract("data/"+result+".geojson")
        	       	map.spin(false)
 	        }
 	    })
@@ -434,8 +434,19 @@ $(document).ready(function(){
 
 		cleanMap("poly")
 
-		var geojsonFeature = readJSON(file)
+		// var geojsonFeature = readJSON(file)
 		
+		var geojsonFeature, error
+		readJSON(file, function(result, e){
+			geojsonFeature = result
+			error = e
+		})
+
+		if (error){
+			console.log(error.error)
+			return 1
+		}
+
 		function getColor(d) {
 		    return d <= 0.15 ? '#de2d26' :
 		           d <= 0.30 ? '#fc9272' :
@@ -516,11 +527,14 @@ $(document).ready(function(){
 			if (props){
 				html += '<b>' + props["NAME_"+s.adm.substr(3)] + '</b><br />' 
 		        
+		        html += "<table id='map_table'><thead><tr><th>Raster</th><th>Raw</th><th>Weighted</th></tr></thead><tbody>"
 		        for (var i=0; i<s.rasters.length; i++){
 
-    			    html += s.rasters[i]+':  ' + roundx(props[s.rasters[i]]) + '<br>'
+
+    			    html += '<tr><td>' + s.rasters[i] + '</td><td>' + roundx( props[s.rasters[i]] ) + '</td><td>' + (props[s.rasters[i]+"_weighted"] ? roundx(props[s.rasters[i]+"_weighted"]) : "" ) + '</td></tr>'
 
 		        }
+		        html += "</tbody></table>"
 
 		        html += 'Result: ' + roundx(props.result) 
 			

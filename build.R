@@ -24,7 +24,6 @@ setwd(base)
 
 geojson <- readOGR(paste("shapefiles",in_adm,"Leaflet.geojson",sep="/"), "OGRGeoJSON")
 
-
 for (i in 1:in_count){
 	csv <-  read.csv(paste("cache",in_files[i], sep="/"))
 	weight <- in_weights[i] / sum(in_weights)
@@ -33,7 +32,7 @@ for (i in 1:in_count){
 	max <- max(extract)
 	if (max == 0){
 		max <- 1
-		calc <- extract
+		calc <- weight
 	} else {
 		calc <- ( extract / max(extract) ) * weight  
 	}
@@ -44,15 +43,11 @@ for (i in 1:in_count){
 		result <- result + calc
 	}
 	geojson@data[in_rasters[i]] <- extract
+	geojson@data[paste(in_rasters[i],"_weighted",sep="")] <- calc
 }
 
 geojson@data["result"] <- result
 
-# write(result, file="/var/www/html/aiddata/MAT/info.txt")
-
-
-
 setwd("/var/www/html/aiddata/MAT/data")
-
 
 toGeoJSON(data=geojson, name=in_name)
