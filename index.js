@@ -311,13 +311,13 @@ $(document).ready(function () {
 		var file = "/aiddata/DET/resources/"+p.continent.toLowerCase()+"/"+p.country.toLowerCase()+"/shapefiles/Leaflet.geojson"
 
 		var geojsonFeature, error
-		readJSON(file, function (result, e) {
-			geojsonFeature = result
+		readJSON(file, function (request, status, e) {
+			geojsonFeature = request
 			error = e
 		})
 
 		if (error) {
-			console.log(error.error)
+			console.log(error)
 			return 1
 		}
 
@@ -437,13 +437,13 @@ $(document).ready(function () {
 		// var geojsonFeature = readJSON(file)
 		
 		var geojsonFeature, error
-		readJSON(file, function (result, e) {
-			geojsonFeature = result
+		readJSON(file, function (request, status, e) {
+			geojsonFeature = request
 			error = e
 		})
 
 		if (error) {
-			console.log(error.error)
+			console.log(error)
 			return 1
 		}
 
@@ -624,10 +624,10 @@ $(document).ready(function () {
 			url: file,
 			async: false,
 	    	success: function (request){
-	    		callback(request, 0)
+	    		callback(request, "good", 0)
 	    	},    
 	    	error: function (request, status, error) {
-        		callback(null, {request, status, error});
+        		callback(request, status, error);
     		}
 	    })
 	    
