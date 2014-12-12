@@ -5,7 +5,7 @@
 $(document).ready(function () {
 
 	//submission data and pending data objects
-	var s,p = {
+	var s, p = {
 		country:"",
 		continent:"",
 		adm:"",
