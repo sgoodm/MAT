@@ -2,6 +2,15 @@
 
 switch ($_POST['type']) {
 
+	case 'exists':
+		$name = $_POST['name'];
+		if ( file_exists("/var/www/html/aiddata/MAT/data/".$name.".geojson") ) {
+			echo "true";
+		} else {
+			echo "false";
+		}
+		break;
+
 	//returns directory contents
 	case 'scan':
 		$path = $_POST['path'];
@@ -61,15 +70,24 @@ switch ($_POST['type']) {
 
 	// send variables to Rscript to create geojson with weighted data
 	case 'buildPolyData':
+
 		$continent = $_POST["continent"];
 		$country = $_POST["country"];
 		$adm = $_POST["adm"];
-		$name = $country ."_". $adm ."_". md5($_POST["name"]);
+		// $name = $country ."_". $adm ."_". md5($_POST["name"]);
 		$rasters = $_POST["rasters"];
 		$weights = $_POST["weights"]; 
 		$files = $_POST["files"];
 		$count = count($rasters);
 
+		// generate unique name
+		$raw = $country ."_". $adm; 
+		for ($i=0; $i<$count; $i++){
+			$raw .= "_" . $rasters[$i] ."_". $weights[$i];
+		}
+		$name = $country ."_". $adm ."_". md5($raw);
+
+		// build variable string for Rscript
 		$vars = strtolower($continent) ." ". strtolower($country) ." ". $adm ." ". $name ." ". $count;
 
 		for ($i=0; $i<$count; $i++){

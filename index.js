@@ -92,7 +92,7 @@ $(document).ready(function () {
 		
 		if (vals == null) { return }
 
-		for (var i=0; i<vals.length;i++) {
+		for (var i=0, ix=vals.length; i<ix; i++) {
 			p.rasters.push(vals[i])
 			p.weights_obj[vals[i]] = 1
 			p.files_obj[vals[i]] = $('#'+vals[i]).attr("data-file")
@@ -136,7 +136,7 @@ $(document).ready(function () {
 
 				// generate unique id
 				p.id = p.country +"_"+ p.adm
-				for (var i=0; i<p.rasters.length; i++) {
+				for (var i=0, ix=p.rasters.length; i<ix; i++) {
 					p.weights[i] = p.weights_obj[p.rasters[i]]
 					p.files[i] = p.files_obj[p.rasters[i]]
 					p.id += "_" + p.rasters[i] +"_"+ p.weights[i]
@@ -528,7 +528,7 @@ $(document).ready(function () {
 				html += '<b>' + props["NAME_"+s.adm.substr(3)] + '</b><br />' 
 		        
 		        html += "<table id='map_table'><thead><tr><th>Raster</th><th>Raw</th><th>Weighted</th></tr></thead><tbody>"
-		        for (var i=0; i<s.rasters.length; i++) {
+		        for (var i=0, ix=s.rasters.length; i<ix; i++) {
 
 
     			    html += '<tr><td>' + s.rasters[i] + '</td><td>' + roundx( props[s.rasters[i]] ) + '</td><td>' + (props[s.rasters[i]+"_weighted"] ? roundx(props[s.rasters[i]+"_weighted"]) : "" ) + '</td></tr>'
@@ -563,10 +563,10 @@ $(document).ready(function () {
 		        labels = [];
 
 		    // loop through our density intervals and generate a label with a colored square for each interval
-		    for (var i = 0; i < grades.length; i++) {
-		        div.innerHTML += '<i style="background:' + getColor(grades[i]) + '"></i> '
+		    for (var i = 0, ix = grades.length; i < ix; i++) {
+		        div.innerHTML += '<i style="background:' + getColor(grades[i]) + '"></i> ';
 
-		        div.innerHTML += "<= " + grades[i]  + '<br>'
+		        div.innerHTML += "<= " + grades[i]  + '<br>';
 		        
 		    }
 		    return div;
@@ -580,19 +580,19 @@ $(document).ready(function () {
 
 		if (method == "point" || method == "all") {
 			if (map.hasLayer(markers)){
-				map.removeLayer(markers)
+				map.removeLayer(markers);
 			}
 		}
 
 		if (method == "poly" || method == "all") {
 			if (map.hasLayer(countryLayer)) {
-				map.removeLayer(countryLayer)
+				map.removeLayer(countryLayer);
 			}
 
 			if (map.hasLayer(geojson)) {
-				map.removeLayer(geojson)
-				info.removeFrom(map)
-				legend.removeFrom(map)				
+				map.removeLayer(geojson);
+				info.removeFrom(map);
+				legend.removeFrom(map);		
 			}
 		}
 	}
@@ -611,7 +611,7 @@ $(document).ready(function () {
 	        type: "post",
 	        async: false,
 	        success: function (result) {
-			    callback(result)
+			    callback(result);
 			}
 	    })
 	}
@@ -624,7 +624,7 @@ $(document).ready(function () {
 			url: file,
 			async: false,
 	    	success: function (request){
-	    		callback(request, "good", 0)
+	    		callback(request, "good", 0);
 	    	},    
 	    	error: function (request, status, error) {
         		callback(request, status, error);
@@ -632,5 +632,26 @@ $(document).ready(function () {
 	    })
 	    
 	};
+
+
+	function readHash() {
+		var h;
+		h = window.location.hash.substring(1);
+		
+		process({type:"exists", name:h}, function(result){
+			if (result == true) {
+				console.log(h);
+				$('#build_toggle').slideDown()
+				$("#build_toggle").click();
+				addGeoExtract("data/"+h+".geojson");
+			} else {
+				console.log("bad hash");
+			}
+
+		})
+
+	};
+
+	readHash();
 	
 })
